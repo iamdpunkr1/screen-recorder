@@ -1,8 +1,9 @@
 {
   "name": "screen-recorder",
   "version": "1.0.0",
-  "description": "",
+  "description": "A Node.js library for screen recording using native addons",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node index.js",
     "test": "node test.js",
@@ -15,7 +16,32 @@
     "node-addon-api": "^7.0.0"
   },
   "gypfile": true,
-  "keywords": [],
-  "author": "Dipankar P.",
-  "license": "ISC"
+  "keywords": [
+    "screen-recorder",
+    "screen-capture",
+    "node-addon",
+    "native",
+    "recording"
+  ],
+  "author": "Dipankar Prasad",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamdpunkr1/screen-recorder.git"
+  },
+  "homepage": "https://github.com/iamdpunkr1/screen-recorder#readme",
+  "bugs": {
+    "url": "https://github.com/iamdpunkr1/screen-recorder/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "index.js",
+    "binding.gyp",
+    "src",
+    "lib",
+    "LICENSE",
+    "README.md"
+  ]
 }
