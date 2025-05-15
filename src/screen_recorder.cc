@@ -1,11 +1,5 @@
-// screen_recorder.cc - Expose frames as buffers for local display
-#include <node.h>
-#include <node_buffer.h>
-#include <uv.h>
-#include <string>
+#include <napi.h>
 #include <vector>
-#include <chrono>
-#include <thread>
 #include <atomic>
 
 #ifdef _WIN32
@@ -18,20 +12,6 @@
 #endif
 
 namespace screen_recorder {
-
-using v8::Context;
-using v8::Exception;
-using v8::Function;
-using v8::FunctionCallbackInfo;
-using v8::Isolate;
-using v8::Local;
-using v8::Number;
-using v8::Object;
-using v8::String;
-using v8::Value;
-using v8::Boolean;
-using v8::ArrayBuffer;
-using v8::Uint8Array;
 
 struct ScreenDimensions {
     int width;
@@ -148,46 +128,47 @@ private:
 // Global recorder instance
 Recorder g_recorder;
 
-void GetNextFrame(const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+// NAPI functions
+Napi::Value GetNextFrame(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
     
     auto frame_data = g_recorder.CaptureFrame();
     g_recorder.IncrementFrameCount();
     
-    Local<ArrayBuffer> buffer = ArrayBuffer::New(isolate, frame_data.size());
-    memcpy(buffer->GetBackingStore()->Data(), frame_data.data(), frame_data.size());
+    // Create a new buffer with the frame data
+    Napi::ArrayBuffer buffer = Napi::ArrayBuffer::New(env, frame_data.size());
+    memcpy(buffer.Data(), frame_data.data(), frame_data.size());
     
-    Local<Uint8Array> uint8_array = Uint8Array::New(buffer, 0, frame_data.size());
-    args.GetReturnValue().Set(uint8_array);
+    // Create a typed array view of the buffer
+    Napi::Uint8Array uint8_array = Napi::Uint8Array::New(env, frame_data.size(), buffer, 0);
+    return uint8_array;
 }
 
-void GetFramesCount(const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+Napi::Value GetFramesCount(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
     int frames_count = g_recorder.GetFramesCount();
-    args.GetReturnValue().Set(Number::New(isolate, frames_count));
+    return Napi::Number::New(env, frames_count);
 }
 
-void GetScreenDimensions(const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+Napi::Value GetScreenDimensions(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
     
     auto dimensions = g_recorder.GetScreenDimensions();
     
-    Local<Object> result = Object::New(isolate);
-    result->Set(context, String::NewFromUtf8(isolate, "width").ToLocalChecked(), 
-               Number::New(isolate, dimensions.width)).Check();
-    result->Set(context, String::NewFromUtf8(isolate, "height").ToLocalChecked(), 
-               Number::New(isolate, dimensions.height)).Check();
+    Napi::Object result = Napi::Object::New(env);
+    result.Set("width", Napi::Number::New(env, dimensions.width));
+    result.Set("height", Napi::Number::New(env, dimensions.height));
     
-    args.GetReturnValue().Set(result);
+    return result;
 }
 
-void Initialize(Local<Object> exports) {
-    NODE_SET_METHOD(exports, "getNextFrame", GetNextFrame);
-    NODE_SET_METHOD(exports, "getFramesCount", GetFramesCount);
-    NODE_SET_METHOD(exports, "getScreenDimensions", GetScreenDimensions);
+Napi::Object Initialize(Napi::Env env, Napi::Object exports) {
+    exports.Set("getNextFrame", Napi::Function::New(env, GetNextFrame));
+    exports.Set("getFramesCount", Napi::Function::New(env, GetFramesCount));
+    exports.Set("getScreenDimensions", Napi::Function::New(env, GetScreenDimensions));
+    return exports;
 }
 
-NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
+NODE_API_MODULE(screen_recorder, Initialize)
 
 }  // namespace screen_recorder
